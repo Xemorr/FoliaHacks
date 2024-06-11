@@ -1,0 +1,4 @@
+name: FoliaHacks
+version: '${version}'
+main: me.xemor.foliahacks.FoliaHacks
+api-version: '1.20'
