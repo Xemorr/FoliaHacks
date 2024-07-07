@@ -15,6 +15,7 @@ import space.arim.morepaperlib.scheduling.GracefulScheduling;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 public final class FoliaHacks implements Listener {
 
@@ -54,6 +55,59 @@ public final class FoliaHacks implements Listener {
                 }
             }, () -> {}, 1L, 1L);
         }
+    }
+
+    /**
+     * This method runs the code immediately if it is able to do so safely,
+     * @param entity - the entity to check ownership of
+     * @param r - the code to run
+     */
+    public <T> CompletableFuture<T> runASAP(Entity entity, Supplier<T> r) {
+        CompletableFuture<T> future = new CompletableFuture<>();
+        if (entityIsOwnedByCurrentRegion != null) {
+            try {
+                if ((boolean) entityIsOwnedByCurrentRegion.invoke(entity)) {
+                    future.complete(r.get());
+                }
+                else {
+                    getScheduling().entitySpecificScheduler(entity).run(() -> {
+                        future.complete(r.get());
+                    }, () -> {});
+                }
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            future.complete(r.get());
+        }
+        return future;
+    }
+
+
+    /**
+     * This method runs the code immediately if it is able to do so safely,
+     * @param location - the location to check ownership of
+     * @param r - the code to run
+     */
+    public <T> CompletableFuture<T> runASAP(Location location, Supplier<T> r) {
+        CompletableFuture<T> future = new CompletableFuture<>();
+        if (locationIsOwnedByCurrentRegion != null) {
+            try {
+                if ((boolean) locationIsOwnedByCurrentRegion.invoke(location)) {
+                    future.complete(r.get());
+                }
+                else {
+                    getScheduling().regionSpecificScheduler(location).run(() -> {
+                        future.complete(r.get());
+                    });
+                }
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            future.complete(r.get());
+        }
+        return future;
     }
 
     /**
