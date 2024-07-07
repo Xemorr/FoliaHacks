@@ -1,5 +1,5 @@
 group = "me.xemor"
-version = "1.3"
+version = "1.5.1"
 description = "foliahacks"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
