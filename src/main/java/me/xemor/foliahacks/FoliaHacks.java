@@ -83,6 +83,48 @@ public final class FoliaHacks implements Listener {
         return future;
     }
 
+    public CompletableFuture<Boolean> runASAP(Entity entity, CompletableFutureSupplier r) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        if (locationIsOwnedByCurrentRegion != null) {
+            try {
+                if ((boolean) locationIsOwnedByCurrentRegion.invoke(entity)) {
+                    return r.get();
+                }
+                else {
+                    getScheduling().entitySpecificScheduler(entity).run(() -> {
+                        r.get().thenAccept(future::complete);
+                    }, () -> {});
+                }
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            r.get().thenAccept(future::complete);
+        }
+        return future;
+    }
+
+    public CompletableFuture<Boolean> runASAP(Location location, CompletableFutureSupplier r) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        if (locationIsOwnedByCurrentRegion != null) {
+            try {
+                if ((boolean) locationIsOwnedByCurrentRegion.invoke(location)) {
+                    return r.get();
+                }
+                else {
+                    getScheduling().regionSpecificScheduler(location).run(() -> {
+                        r.get().thenAccept(future::complete);
+                    });
+                }
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            r.get().thenAccept(future::complete);
+        }
+        return future;
+    }
+
 
     /**
      * This method runs the code immediately if it is able to do so safely,
@@ -176,5 +218,9 @@ public final class FoliaHacks implements Listener {
 
     public MorePaperLib getMorePaperLib() {
         return morePaperLib;
+    }
+
+    public interface CompletableFutureSupplier {
+        CompletableFuture<Boolean> get();
     }
 }
